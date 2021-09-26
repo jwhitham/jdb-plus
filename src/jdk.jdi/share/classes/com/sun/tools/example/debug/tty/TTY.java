@@ -58,6 +58,7 @@ public class TTY implements EventNotifier {
     private static final String progname = "jdb";
 
     private volatile boolean shuttingDown = false;
+    private DisassembleProgram disassembleProgram = new DisassembleProgram();
 
     public void setShuttingDown(boolean s) {
        shuttingDown = s;
@@ -256,6 +257,7 @@ public class TTY implements EventNotifier {
                                                          line});
                 }
             }
+            System.out.println(disassembleProgram.getInstruction(loc.method(), loc.codeIndex()));
         }
         MessageOutput.println();
     }
@@ -287,6 +289,7 @@ public class TTY implements EventNotifier {
         {"clear",        "y",         "n"},
         {"connectors",   "y",         "y"},
         {"cont",         "n",         "n"},
+        {"dis",          "n",         "y"},
         {"disablegc",    "n",         "n"},
         {"down",         "n",         "y"},
         {"dump",         "n",         "y"},
@@ -529,6 +532,8 @@ public class TTY implements EventNotifier {
                             evaluator.commandWatch(t);
                         } else if (cmd.equals("unwatch")) {
                             evaluator.commandUnwatch(t);
+                        } else if (cmd.equals("dis")) {
+                            evaluator.commandDisassemble(t);
                         } else if (cmd.equals("list")) {
                             evaluator.commandList(t);
                         } else if (cmd.equals("lines")) { // Undocumented command: useful for testing.

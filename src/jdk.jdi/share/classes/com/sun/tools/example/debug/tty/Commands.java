@@ -37,6 +37,7 @@ package com.sun.tools.example.debug.tty;
 import com.sun.jdi.*;
 import com.sun.jdi.connect.Connector;
 import com.sun.jdi.request.*;
+import com.sun.tools.jdi.LocalVariableImpl;
 import com.sun.tools.example.debug.expr.ExpressionParser;
 import com.sun.tools.example.debug.expr.ParseException;
 
@@ -1404,6 +1405,91 @@ class Commands {
         }
     }
 
+    private DisassembleProgram disassembleProgram = new DisassembleProgram();
+
+    void commandDisassemble(StringTokenizer t) {
+        StackFrame frame = null;
+        ThreadInfo threadInfo = ThreadInfo.getCurrentThreadInfo();
+        if (threadInfo == null) {
+            MessageOutput.println("No thread specified.");
+            return;
+        }
+        try {
+            frame = threadInfo.getCurrentFrame();
+        } catch (IncompatibleThreadStateException e) {
+            MessageOutput.println("Current thread isnt suspended.");
+            return;
+        }
+
+        if (frame == null) {
+            MessageOutput.println("No frames on the current call stack");
+            return;
+        }
+
+        Location loc = frame.location();
+        if (loc.method().isNative()) {
+            MessageOutput.println("Current method is native");
+            return;
+        }
+
+        DisassembleMethod dis = disassembleProgram.getMethod(loc.method());
+
+        int currentPC = -1;
+        if ((loc.codeIndex() <= (long) Integer.MAX_VALUE) && (loc.codeIndex() >= 0)) {
+            currentPC = (int) loc.codeIndex();
+        }
+
+        int lowPC = -1;
+        int highPC = -1;
+
+        if (t.hasMoreTokens()) {
+            String pcS = t.nextToken();
+            try {
+                lowPC = Integer.parseInt(pcS);
+            } catch (Exception e) {
+                MessageOutput.println("Starting PC is invalid");
+                return;
+            }
+            if (t.hasMoreTokens()) {
+                pcS = t.nextToken();
+                try {
+                    highPC = Integer.parseInt(pcS);
+                } catch (Exception e) {
+                    MessageOutput.println("Ending PC is invalid");
+                    return;
+                }
+            }
+        }
+        if (lowPC < 0) {
+            lowPC = currentPC;
+            for (int i = 0; i < 5; i++) {
+                lowPC = dis.getPrevious(lowPC);
+            }
+        }
+        if (lowPC < 0) {
+            lowPC = 0;
+        }
+        if (highPC < lowPC) {
+            highPC = lowPC;
+            for (int i = 0; i < 5; i++) {
+                highPC = dis.getNext(highPC);
+            }
+        }
+        if (highPC > dis.length()) {
+            highPC = dis.length();
+        }
+
+        while (lowPC < highPC) {
+            if (lowPC == currentPC) {
+                System.out.print("=>");
+            } else {
+                System.out.print("  ");
+            }
+            System.out.println(dis.getInstruction(lowPC));
+            lowPC = dis.getNext(lowPC);
+        }
+    }
+
     void commandList(StringTokenizer t) {
         StackFrame frame = null;
         ThreadInfo threadInfo = ThreadInfo.getCurrentThreadInfo();
@@ -1574,7 +1660,6 @@ class Commands {
                 throw new AbsentInformationException();
             }
             List<LocalVariable> vars = frame.visibleVariables();
-
             if (vars.size() == 0) {
                 MessageOutput.println("No local variables");
                 return;
