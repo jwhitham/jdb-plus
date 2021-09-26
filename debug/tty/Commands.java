@@ -1434,11 +1434,12 @@ class Commands {
 
         DisassembleMethod dis = disassembleProgram.getMethod(loc.method());
 
-        int currentPC = -1;
+        int currentPC = 0;
         if ((loc.codeIndex() <= (long) Integer.MAX_VALUE) && (loc.codeIndex() >= 0)) {
             currentPC = (int) loc.codeIndex();
         }
 
+        final int numberOfContextInstructions = 5;
         int lowPC = -1;
         int highPC = -1;
 
@@ -1462,16 +1463,13 @@ class Commands {
         }
         if (lowPC < 0) {
             lowPC = currentPC;
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < numberOfContextInstructions; i++) {
                 lowPC = dis.getPrevious(lowPC);
             }
         }
-        if (lowPC < 0) {
-            lowPC = 0;
-        }
         if (highPC < lowPC) {
             highPC = lowPC;
-            for (int i = 0; i < 5; i++) {
+            for (int i = -numberOfContextInstructions; i <= numberOfContextInstructions; i++) {
                 highPC = dis.getNext(highPC);
             }
         }
