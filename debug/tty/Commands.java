@@ -44,6 +44,8 @@ import debug.expr.ParseException;
 import java.text.*;
 import java.util.*;
 import java.io.*;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 class Commands {
 
@@ -226,11 +228,29 @@ class Commands {
 
     }
 
-    void commandClasses() {
+    /**
+     * Print out the list of classes known to the JVM.
+     * 
+     * The user may optionally specify a filter as a regular expression.
+     */
+    void commandClasses(StringTokenizer t) {
+        Pattern filter = null;
+        if (t.hasMoreTokens()) {
+            String filterText = t.nextToken();
+            try {
+                filter = Pattern.compile(filterText);
+            } catch (PatternSyntaxException e) {
+                System.out.println("Invalid filter expression: " + e.getDescription());
+                return;
+            }
+        }
+
         StringBuilder classList = new StringBuilder();
         for (ReferenceType refType : Env.vm().allClasses()) {
-            classList.append(refType.name());
-            classList.append("\n");
+            if ((filter == null) || filter.matcher(refType.name()).matches()) {
+                classList.append(refType.name());
+                classList.append("\n");
+            }
         }
         MessageOutput.print("** classes list **", classList.toString());
     }

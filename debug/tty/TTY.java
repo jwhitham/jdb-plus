@@ -450,7 +450,7 @@ public class TTY implements EventNotifier {
                         } else if (cmd.equals("locals")) {
                             evaluator.commandLocals();
                         } else if (cmd.equals("classes")) {
-                            evaluator.commandClasses();
+                            evaluator.commandClasses(t);
                         } else if (cmd.equals("class")) {
                             evaluator.commandClass(t);
                         } else if (cmd.equals("connectors")) {
